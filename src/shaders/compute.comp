@@ -36,6 +36,22 @@ struct Blade {
 // 	  uint firstInstance; // = 0
 // } numBlades;
 
+// Storage buffers
+layout(set = 2, binding = 0) buffer Blades {
+    Blade blades[];
+};
+
+layout(set = 2, binding = 1) buffer CulledBlades {
+    Blade culledBlades[];
+};
+
+layout(set = 2, binding = 2) buffer NumBlades {
+    uint vertexCount;
+    uint instanceCount;
+    uint firstVertex;
+    uint firstInstance;
+} numBlades;
+
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
@@ -43,14 +59,79 @@ bool inBounds(float value, float bounds) {
 void main() {
 	// Reset the number of blades to 0
 	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
+		numBlades.vertexCount = 0;
 	}
 	barrier(); // Wait till all threads reach this point
 
     // TODO: Apply forces on every blade and update the vertices in the buffer
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= blades.length()) {
+        return;
+    }
 
-	// TODO: Cull blades that are too far away or not in the camera frustum and write them
+    Blade blade = blades[index];
+    vec3 v0 = blade.v0.xyz;
+    vec3 v1 = blade.v1.xyz;
+    vec3 v2 = blade.v2.xyz;
+    vec3 up = normalize(blade.up.xyz);
+    
+    float orientation = blade.v0.w;
+    float height = blade.v1.w;
+    float width = blade.v2.w;
+    float stiffness = blade.up.w;
+    
+    // gravity
+    // environmental gravity
+    vec4 D = vec4(0.0, -1.0, 0.0, 9.8);
+    vec3 gE = normalize(D.xyz) * D.w;
+    
+    // front gravity
+    vec3 f = normalize(cross(up, vec3(sin(orientation), 0.0, cos(orientation)))); // front direction
+    vec3 gF = (1.0 / 4.0) * length(gE) * f;
+    
+    // total gravity
+    vec3 g = gE + gF;
+
+    // recovery force
+    vec3 iv2 = v0 + up * height; //initial v2
+    vec3 r = (iv2 - v2) * stiffness;
+
+    // wind
+    float windStrength = 8.0;
+    float windFreq = 1.0;
+    vec3 windDir = windStrength * vec3(sin(windFreq * v0.x * 0.5 + totalTime * 1.3), 0.0, cos(windFreq * v0.z * 0.5 + totalTime * 0.9));
+    float directionalAlign = 1.0 - abs(dot(normalize(windDir), normalize(v2 - v0)));
+    float heightRatio = dot(v2 - v0, up) / height;
+    float windAlign = directionalAlign * heightRatio;
+    vec3 w = windDir * windAlign; 
+
+    //total force
+    vec3 tv2 = (g + r + w) * deltaTime;
+    vec3 v2new = v2 + tv2;
+    
+    //make v2 on the ground
+    v2new = v2new - up * min(dot(up, v2new - v0), 0.0);
+
+    //update V1 to maintain appropriate curvature of our Bezier curve
+    float lproj = length(v2new - v0 - up * dot(v2new - v0, up));
+    vec3 v1new = v0 + height * up * max(1.0 - (lproj / height), 0.05 * max(lproj / height, 1.0));
+
+    //calculate the length of curve then update v1, v2 accordingly
+    float L0 = distance(v0, v2new);
+    float L1 = distance(v0, v1new) + distance(v1new, v2new);
+    float n = 2.0;
+    float L = (2.0 * L0 + (n - 1.0) * L1) / (n + 1.0);
+    float r_scale = height / L;
+    v1new = v0 + r_scale * (v1new - v0);
+    v2new = v1new + r_scale * (v2new - v1new);
+
+    blade.v1.xyz = v1new;
+    blade.v2.xyz = v2new;
+    blades[index] = blade;
+
+    // TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+    culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blade;
 }
