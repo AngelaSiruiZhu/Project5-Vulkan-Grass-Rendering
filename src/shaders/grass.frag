@@ -13,8 +13,8 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     // TODO: Compute fragment color
-    vec3 baseColor = vec3(0.1, 0.3, 0.1);
-    vec3 tipColor = vec3(0.3, 0.8, 0.3); 
+    vec3 baseColor = vec3(0.631, 0.361, 0.89);
+    vec3 tipColor = vec3(1.0, 0.702, 0.976); 
     vec3 color = mix(baseColor, tipColor, in_height);
     
     outColor = vec4(color, 1.0);

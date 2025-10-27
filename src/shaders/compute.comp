@@ -4,6 +4,16 @@
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
+#define ORIENTATION_CULLING 0
+#define VIEW_FRUSTUM_CULLING 0
+#define TOLERANCE -0.5
+#define DISTANCE_CULLING 1
+#define NUM_BUCKETS 5
+#define MAX_DISTANCE 20.0
+
+#define WIND_STRENGTH 8.0
+#define WIND_FREQUENCY 1.0
+
 layout(set = 0, binding = 0) uniform CameraBufferObject {
     mat4 view;
     mat4 proj;
@@ -97,9 +107,7 @@ void main() {
     vec3 r = (iv2 - v2) * stiffness;
 
     // wind
-    float windStrength = 8.0;
-    float windFreq = 1.0;
-    vec3 windDir = windStrength * vec3(sin(windFreq * v0.x * 0.5 + totalTime * 1.3), 0.0, cos(windFreq * v0.z * 0.5 + totalTime * 0.9));
+    vec3 windDir = WIND_STRENGTH * vec3(sin(WIND_FREQUENCY * v0.x * 0.5 + totalTime * 1.3), 0.0, cos(WIND_FREQUENCY * v0.z * 0.5 + totalTime * 0.9));
     float directionalAlign = 1.0 - abs(dot(normalize(windDir), normalize(v2 - v0)));
     float heightRatio = dot(v2 - v0, up) / height;
     float windAlign = directionalAlign * heightRatio;
@@ -133,5 +141,50 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
-    culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blade;
+
+    bool visible = true;
+    
+#if ORIENTATION_CULLING
+    vec3 camPos = inverse(camera.view)[3].xyz;
+    vec3 viewDir = normalize(v0 - camPos);
+    
+    if (abs(dot(viewDir, f)) < 0.9) {
+        visible = false;
+    }
+#endif
+
+#if VIEW_FRUSTUM_CULLING
+    vec3 m = 0.25 * v0 + 0.5 * v1new + 0.25 * v2new;
+    
+    vec4 v0_clip = camera.proj * camera.view * vec4(v0, 1.0);
+    float h0 = v0_clip.w + TOLERANCE;
+    bool isV0inBounds = inBounds(v0_clip.x, h0) && inBounds(v0_clip.y, h0);
+    
+    vec4 v2_clip = camera.proj * camera.view * vec4(v2new, 1.0);
+    float h2 = v2_clip.w + TOLERANCE;
+    bool isV2inBounds = inBounds(v2_clip.x, h2) && inBounds(v2_clip.y, h2);
+    
+    vec4 m_clip = camera.proj * camera.view * vec4(m, 1.0);
+    float hm = m_clip.w + TOLERANCE;
+    bool isMinBounds = inBounds(m_clip.x, hm) && inBounds(m_clip.y, hm);
+    
+    if (!isV0inBounds && !isV2inBounds && !isMinBounds) {
+        visible = false;
+    }
+#endif
+
+#if DISTANCE_CULLING
+    vec3 camPos = inverse(camera.view)[3].xyz;
+    vec3 camToV0 = v0 - camPos;
+    vec3 upProj = up * dot(camToV0, up);
+    float d_proj = length(camToV0 - upProj);
+    
+    if (index % NUM_BUCKETS < NUM_BUCKETS * (d_proj / MAX_DISTANCE)) {
+        visible = false;
+    }
+#endif
+    
+    if (visible) {
+        culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blade;
+    }
 }
