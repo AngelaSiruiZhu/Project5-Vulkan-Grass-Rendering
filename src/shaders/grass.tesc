@@ -30,11 +30,25 @@ void main() {
     out_up[gl_InvocationID] = in_up[gl_InvocationID];
 
 	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 1.0;
-    gl_TessLevelInner[1] = 5.0;
+	// Extra Credit: LOD
+	vec3 cameraPos = inverse(camera.view)[3].xyz;
+	vec3 bladePos = in_v0[gl_InvocationID].xyz;
+	float distance = length(cameraPos - bladePos);
+	
+	float tessLevel;
+	if (distance < 5.0) {
+		tessLevel = 10.0; 
+	} else if (distance < 10.0) {
+		tessLevel = 5.0;
+	} else {
+		tessLevel = 3.0;
+	}
     
-    gl_TessLevelOuter[0] = 5.0;
+    gl_TessLevelInner[0] = 1.0;
+    gl_TessLevelInner[1] = tessLevel;
+    
+    gl_TessLevelOuter[0] = tessLevel;
     gl_TessLevelOuter[1] = 1.0;
-    gl_TessLevelOuter[2] = 5.0;
+    gl_TessLevelOuter[2] = tessLevel;
     gl_TessLevelOuter[3] = 1.0;
 }
