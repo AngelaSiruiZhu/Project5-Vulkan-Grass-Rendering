@@ -116,6 +116,20 @@ int main() {
         grassImageMemory
     );
 
+    VkImage sphereImage;
+    VkDeviceMemory sphereImageMemory;
+    Image::FromFile(device,
+        transferCommandPool,
+        "images/sphere.jpg",
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        sphereImage,
+        sphereImageMemory
+    );
+
     float planeDim = 15.f;
     float halfWidth = planeDim * 0.5f;
     Model* plane = new Model(device, transferCommandPool,
@@ -128,6 +142,50 @@ int main() {
         { 0, 1, 2, 2, 3, 0 }
     );
     plane->SetTexture(grassImage);
+
+    // create sphere mesh
+    std::vector<Vertex> sphereVertices;
+    std::vector<uint32_t> sphereIndices;
+    
+    int latitudes = 20;
+    int longitudes = 20;
+    float sphereRadius = 1.0f;
+
+    for (int lat = 0; lat <= latitudes; ++lat) {
+        float theta = lat * 3.14159f / latitudes;
+        float sinTheta = sin(theta);
+        float cosTheta = cos(theta);
+        
+        for (int lon = 0; lon <= longitudes; ++lon) {
+            float phi = lon * 2.0f * 3.14159f / longitudes;
+            float sinPhi = sin(phi);
+            float cosPhi = cos(phi);
+            
+            glm::vec3 position(sphereRadius * cosPhi * sinTheta, sphereRadius * cosTheta, sphereRadius * sinPhi * sinTheta);
+            glm::vec3 color(1.0f, 0.4f, 0.7f);
+            glm::vec2 uv(static_cast<float>(lon) / longitudes, static_cast<float>(lat) / latitudes);
+            
+            sphereVertices.push_back({ position, color, uv });
+        }
+    }
+    
+    for (int lat = 0; lat < latitudes; ++lat) {
+        for (int lon = 0; lon < longitudes; ++lon) {
+            int current = lat * (longitudes + 1) + lon;
+            int next = current + longitudes + 1;
+            
+            sphereIndices.push_back(current);
+            sphereIndices.push_back(next);
+            sphereIndices.push_back(current + 1);
+            
+            sphereIndices.push_back(current + 1);
+            sphereIndices.push_back(next);
+            sphereIndices.push_back(next + 1);
+        }
+    }
+    
+    Model* sphere = new Model(device, transferCommandPool, sphereVertices, sphereIndices);
+    sphere->SetTexture(sphereImage);
     
     Blades* blades = new Blades(device, transferCommandPool, planeDim);
 
@@ -135,7 +193,9 @@ int main() {
 
     Scene* scene = new Scene(device);
     scene->AddModel(plane);
+    scene->AddModel(sphere);
     scene->AddBlades(blades);
+    scene->SetSphereModel(sphere);
 
     renderer = new Renderer(device, swapChain, scene, camera);
 
@@ -145,6 +205,21 @@ int main() {
 
     while (!ShouldQuit()) {
         glfwPollEvents();
+
+        float moveSpeed = 0.01f;
+        if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_W) == GLFW_PRESS) {
+            scene->MoveSphere(0.0f, 0.0f, -moveSpeed);
+        }
+        if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_S) == GLFW_PRESS) {
+            scene->MoveSphere(0.0f, 0.0f, moveSpeed);
+        }
+        if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_A) == GLFW_PRESS) {
+            scene->MoveSphere(-moveSpeed, 0.0f, 0.0f);
+        }
+        if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_D) == GLFW_PRESS) {
+            scene->MoveSphere(moveSpeed, 0.0f, 0.0f);
+        }
+        
         scene->UpdateTime();
         renderer->Frame();
     }
@@ -153,9 +228,13 @@ int main() {
 
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);
     vkFreeMemory(device->GetVkDevice(), grassImageMemory, nullptr);
+    
+    vkDestroyImage(device->GetVkDevice(), sphereImage, nullptr);
+    vkFreeMemory(device->GetVkDevice(), sphereImageMemory, nullptr);
 
     delete scene;
     delete plane;
+    delete sphere;
     delete blades;
     delete camera;
     delete renderer;

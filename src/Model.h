@@ -52,4 +52,6 @@ public:
     VkBuffer GetModelBuffer() const;
     VkImageView GetTextureView() const;
     VkSampler GetTextureSampler() const;
+    
+    void UpdateModelMatrix(const glm::mat4& matrix);
 };

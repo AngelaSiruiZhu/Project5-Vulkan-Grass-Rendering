@@ -11,6 +11,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 #define NUM_BUCKETS 5
 #define MAX_DISTANCE 20.0
 
+#define WIND_ENABLED 0
 #define WIND_STRENGTH 8.0
 #define WIND_FREQUENCY 1.0
 
@@ -61,6 +62,10 @@ layout(set = 2, binding = 2) buffer NumBlades {
     uint firstVertex;
     uint firstInstance;
 } numBlades;
+
+layout(set = 3, binding = 0) uniform SphereData {
+    vec4 positionRadius;
+} sphere;
 
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
@@ -142,6 +147,8 @@ void main() {
     vec3 r = (iv2 - v2) * stiffness;
 
     // wind
+    vec3 w = vec3(0.0);
+#if WIND_ENABLED
     const float PI = 3.14159265;
     vec2 wavePos = v0.xz * 0.05 + vec2(totalTime * 0.4, 0.0);
     float wave = sin(wavePos.x + snoise(wavePos * 0.8) * 2.0);
@@ -161,10 +168,26 @@ void main() {
 
     float directionalAlign = 1.0 - abs(dot(normalize(windForce), normalize(v2 - v0)));
     float heightRatio = dot(v2 - v0, up) / height;
-    vec3 w = heightRatio * directionalAlign * windForce;
+    w = heightRatio * directionalAlign * windForce;
+#endif
+
+    // extra credit: sphere
+    vec3 sphereCenter = sphere.positionRadius.xyz;
+    float sphereRadius = sphere.positionRadius.w;
+    
+    vec3 toSphere = v2 - sphereCenter;
+    float distToSphere = length(toSphere);
+    
+    vec3 sphereForce = vec3(0.0);
+    float sphererPushMagnitude = 50.0;
+    if (distToSphere < sphereRadius * 2.0) {
+        float pushStrength = 1.0 - (distToSphere / (sphereRadius * 2.0));
+        pushStrength = pushStrength * pushStrength;
+        sphereForce = normalize(toSphere) * pushStrength * sphererPushMagnitude;
+    }
 
     //total force
-    vec3 tv2 = (g + r + w) * deltaTime;
+    vec3 tv2 = (g + r + w + sphereForce) * deltaTime;
     vec3 v2new = v2 + tv2;
     
     //make v2 on the ground

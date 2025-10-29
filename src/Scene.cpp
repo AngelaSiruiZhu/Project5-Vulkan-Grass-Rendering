@@ -1,10 +1,13 @@
 #include "Scene.h"
 #include "BufferUtils.h"
+#include <glm/gtc/matrix_transform.hpp>
 
-Scene::Scene(Device* device) : device(device) {
+Scene::Scene(Device* device) : device(device), sphereModel(nullptr) {
     BufferUtils::CreateBuffer(device, sizeof(Time), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, timeBuffer, timeBufferMemory);
     vkMapMemory(device->GetVkDevice(), timeBufferMemory, 0, sizeof(Time), 0, &mappedData);
     memcpy(mappedData, &time, sizeof(Time));
+    
+    sphereData.positionRadius = glm::vec4(0.0f, 1.5f, 0.0f, 1.0f);
 }
 
 const std::vector<Model*>& Scene::GetModels() const {
@@ -36,6 +39,31 @@ void Scene::UpdateTime() {
 
 VkBuffer Scene::GetTimeBuffer() const {
     return timeBuffer;
+}
+
+void Scene::SetSphereModel(Model* model) {
+    sphereModel = model;
+    UpdateSphereTransform();
+}
+
+void Scene::MoveSphere(float dx, float dy, float dz) {
+    sphereData.positionRadius.x += dx;
+    sphereData.positionRadius.y += dy;
+    sphereData.positionRadius.z += dz;
+    UpdateSphereTransform();
+}
+
+void Scene::UpdateSphereTransform() {
+    if (sphereModel != nullptr) {
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        modelMatrix = glm::translate(modelMatrix, glm::vec3(sphereData.positionRadius.x, sphereData.positionRadius.y, sphereData.positionRadius.z));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(sphereData.positionRadius.w));
+        sphereModel->UpdateModelMatrix(modelMatrix);
+    }
+}
+
+const SphereData& Scene::GetSphereData() const {
+    return sphereData;
 }
 
 Scene::~Scene() {

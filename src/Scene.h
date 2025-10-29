@@ -13,6 +13,10 @@ struct Time {
     float totalTime = 0.0f;
 };
 
+struct SphereData {
+    glm::vec4 positionRadius;  // xyz = position, w = radius
+};
+
 class Scene {
 private:
     Device* device;
@@ -20,6 +24,9 @@ private:
     VkBuffer timeBuffer;
     VkDeviceMemory timeBufferMemory;
     Time time;
+    
+    SphereData sphereData;
+    Model* sphereModel;
     
     void* mappedData;
 
@@ -42,4 +49,9 @@ public:
     VkBuffer GetTimeBuffer() const;
 
     void UpdateTime();
+    
+    void SetSphereModel(Model* model);
+    void MoveSphere(float dx, float dy, float dz);
+    void UpdateSphereTransform();
+    const SphereData& GetSphereData() const;
 };

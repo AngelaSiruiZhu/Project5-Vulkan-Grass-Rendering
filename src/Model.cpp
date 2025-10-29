@@ -14,7 +14,15 @@ Model::Model(Device* device, VkCommandPool commandPool, const std::vector<Vertex
     }
 
     modelBufferObject.modelMatrix = glm::mat4(1.0f);
-    BufferUtils::CreateBufferFromData(device, commandPool, &modelBufferObject, sizeof(ModelBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, modelBuffer, modelBufferMemory);
+    BufferUtils::CreateBuffer(device, sizeof(ModelBufferObject), 
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        modelBuffer, modelBufferMemory);
+
+    void* data;
+    vkMapMemory(device->GetVkDevice(), modelBufferMemory, 0, sizeof(ModelBufferObject), 0, &data);
+    memcpy(data, &modelBufferObject, sizeof(ModelBufferObject));
+    vkUnmapMemory(device->GetVkDevice(), modelBufferMemory);
 }
 
 Model::~Model() {
@@ -112,4 +120,13 @@ VkImageView Model::GetTextureView() const {
 
 VkSampler Model::GetTextureSampler() const {
     return textureSampler;
+}
+
+void Model::UpdateModelMatrix(const glm::mat4& matrix) {
+    modelBufferObject.modelMatrix = matrix;
+    
+    void* data;
+    vkMapMemory(device->GetVkDevice(), modelBufferMemory, 0, sizeof(ModelBufferObject), 0, &data);
+    memcpy(data, &modelBufferObject, sizeof(ModelBufferObject));
+    vkUnmapMemory(device->GetVkDevice(), modelBufferMemory);
 }

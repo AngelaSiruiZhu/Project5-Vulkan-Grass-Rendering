@@ -19,6 +19,7 @@ public:
     void CreateModelDescriptorSetLayout();
     void CreateTimeDescriptorSetLayout();
     void CreateComputeDescriptorSetLayout();
+    void CreateSphereDescriptorSetLayout();
 
     void CreateDescriptorPool();
 
@@ -27,6 +28,9 @@ public:
     void CreateGrassDescriptorSets();
     void CreateTimeDescriptorSet();
     void CreateComputeDescriptorSets();
+    void CreateSphereDescriptorSet();
+
+    void CreateSphereBuffer();
 
     void CreateGraphicsPipeline();
     void CreateGrassPipeline();
@@ -38,6 +42,8 @@ public:
 
     void RecordCommandBuffers();
     void RecordComputeCommandBuffer();
+
+    void UpdateSphereBuffer();
 
     void Frame();
 
@@ -57,6 +63,7 @@ private:
     VkDescriptorSetLayout modelDescriptorSetLayout;
     VkDescriptorSetLayout timeDescriptorSetLayout;
     VkDescriptorSetLayout computeDescriptorSetLayout;
+    VkDescriptorSetLayout sphereDescriptorSetLayout;
     
     VkDescriptorPool descriptorPool;
 
@@ -65,6 +72,7 @@ private:
     std::vector<VkDescriptorSet> grassDescriptorSets;
     VkDescriptorSet timeDescriptorSet;
     std::vector<VkDescriptorSet> computeDescriptorSets;
+    VkDescriptorSet sphereDescriptorSet;
 
     VkPipelineLayout graphicsPipelineLayout;
     VkPipelineLayout grassPipelineLayout;
@@ -82,4 +90,7 @@ private:
 
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer computeCommandBuffer;
+    
+    VkBuffer sphereBuffer;
+    VkDeviceMemory sphereBufferMemory;
 };
