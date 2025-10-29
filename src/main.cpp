@@ -6,6 +6,8 @@
 #include "Scene.h"
 #include "Image.h"
 
+#define ADD_INTERACTIVE_SPHERE 1
+
 Device* device;
 SwapChain* swapChain;
 Renderer* renderer;
@@ -116,6 +118,7 @@ int main() {
         grassImageMemory
     );
 
+#if ADD_INTERACTIVE_SPHERE
     VkImage sphereImage;
     VkDeviceMemory sphereImageMemory;
     Image::FromFile(device,
@@ -129,6 +132,7 @@ int main() {
         sphereImage,
         sphereImageMemory
     );
+#endif
 
     float planeDim = 15.f;
     float halfWidth = planeDim * 0.5f;
@@ -143,6 +147,7 @@ int main() {
     );
     plane->SetTexture(grassImage);
 
+#if ADD_INTERACTIVE_SPHERE
     // create sphere mesh
     std::vector<Vertex> sphereVertices;
     std::vector<uint32_t> sphereIndices;
@@ -186,6 +191,7 @@ int main() {
     
     Model* sphere = new Model(device, transferCommandPool, sphereVertices, sphereIndices);
     sphere->SetTexture(sphereImage);
+#endif
     
     Blades* blades = new Blades(device, transferCommandPool, planeDim);
 
@@ -193,9 +199,11 @@ int main() {
 
     Scene* scene = new Scene(device);
     scene->AddModel(plane);
+#if ADD_INTERACTIVE_SPHERE
     scene->AddModel(sphere);
-    scene->AddBlades(blades);
     scene->SetSphereModel(sphere);
+#endif
+    scene->AddBlades(blades);
 
     renderer = new Renderer(device, swapChain, scene, camera);
 
@@ -206,6 +214,7 @@ int main() {
     while (!ShouldQuit()) {
         glfwPollEvents();
 
+#if ADD_INTERACTIVE_SPHERE
         float moveSpeed = 0.01f;
         if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_W) == GLFW_PRESS) {
             scene->MoveSphere(0.0f, 0.0f, -moveSpeed);
@@ -219,6 +228,7 @@ int main() {
         if (glfwGetKey(GetGLFWWindow(), GLFW_KEY_D) == GLFW_PRESS) {
             scene->MoveSphere(moveSpeed, 0.0f, 0.0f);
         }
+#endif
         
         scene->UpdateTime();
         renderer->Frame();
@@ -229,12 +239,16 @@ int main() {
     vkDestroyImage(device->GetVkDevice(), grassImage, nullptr);
     vkFreeMemory(device->GetVkDevice(), grassImageMemory, nullptr);
     
+#if ADD_INTERACTIVE_SPHERE
     vkDestroyImage(device->GetVkDevice(), sphereImage, nullptr);
     vkFreeMemory(device->GetVkDevice(), sphereImageMemory, nullptr);
+#endif
 
     delete scene;
     delete plane;
+#if ADD_INTERACTIVE_SPHERE
     delete sphere;
+#endif
     delete blades;
     delete camera;
     delete renderer;

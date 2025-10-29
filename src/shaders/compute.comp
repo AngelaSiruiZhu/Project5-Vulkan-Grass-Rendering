@@ -6,7 +6,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 #define ORIENTATION_CULLING 0
 #define VIEW_FRUSTUM_CULLING 0
-#define TOLERANCE -0.5
+#define TOLERANCE -1.0
 #define DISTANCE_CULLING 0
 #define NUM_BUCKETS 5
 #define MAX_DISTANCE 20.0
