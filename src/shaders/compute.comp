@@ -11,7 +11,7 @@ layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 #define NUM_BUCKETS 5
 #define MAX_DISTANCE 20.0
 
-#define WIND_ENABLED 0
+#define WIND_ENABLED 1
 #define WIND_STRENGTH 8.0
 #define WIND_FREQUENCY 1.0
 
