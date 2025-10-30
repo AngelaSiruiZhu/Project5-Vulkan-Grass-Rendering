@@ -14,7 +14,7 @@ struct Time {
 };
 
 struct SphereData {
-    glm::vec4 positionRadius;  // xyz = position, w = radius
+    glm::vec4 positionRadius;
 };
 
 class Scene {
@@ -49,6 +49,7 @@ public:
     VkBuffer GetTimeBuffer() const;
 
     void UpdateTime();
+    float GetFPS() const;
     
     void SetSphereModel(Model* model);
     void MoveSphere(float dx, float dy, float dz);

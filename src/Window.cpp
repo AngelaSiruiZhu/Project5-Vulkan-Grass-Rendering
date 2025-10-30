@@ -38,3 +38,9 @@ void DestroyWindow() {
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+
+void UpdateWindowTitle(const char* title) {
+    if (window) {
+        glfwSetWindowTitle(window, title);
+    }
+}

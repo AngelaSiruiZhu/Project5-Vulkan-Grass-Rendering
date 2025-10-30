@@ -16,3 +16,4 @@ struct GLFWwindow* GetGLFWWindow();
 void InitializeWindow(int width, int height, const char* name);
 bool ShouldQuit();
 void DestroyWindow();
+void UpdateWindowTitle(const char* title);

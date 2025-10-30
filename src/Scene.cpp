@@ -37,6 +37,10 @@ void Scene::UpdateTime() {
     memcpy(mappedData, &time, sizeof(Time));
 }
 
+float Scene::GetFPS() const {
+    return (time.deltaTime > 0.0f) ? (1.0f / time.deltaTime) : 0.0f;
+}
+
 VkBuffer Scene::GetTimeBuffer() const {
     return timeBuffer;
 }

@@ -6,7 +6,7 @@
 #include "Scene.h"
 #include "Image.h"
 
-#define ADD_INTERACTIVE_SPHERE 1
+#define ADD_INTERACTIVE_SPHERE 0
 
 Device* device;
 SwapChain* swapChain;
@@ -211,6 +211,10 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    // FPS tracking
+    int frameCount = 0;
+    double lastFPSUpdate = glfwGetTime();
+
     while (!ShouldQuit()) {
         glfwPollEvents();
 
@@ -232,6 +236,17 @@ int main() {
         
         scene->UpdateTime();
         renderer->Frame();
+
+        // Update FPS in window title every 0.5 seconds
+        frameCount++;
+        double currentTime = glfwGetTime();
+        if (currentTime - lastFPSUpdate >= 0.5) {
+            float fps = scene->GetFPS();
+            char title[256];
+            snprintf(title, sizeof(title), "Vulkan Grass Rendering - FPS: %.1f", fps);
+            UpdateWindowTitle(title);
+            lastFPSUpdate = currentTime;
+        }
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
