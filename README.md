@@ -9,24 +9,43 @@ Vulkan Grass Rendering
 ![](img/grass3.gif)
 
 ## Overview
-Real-time grass in Vulkan: blades are Bezier curves simulated in a compute pass, then tessellated and shaded. Includes wind animation, distance-based LOD, and an optional interactive sphere that pushes grass aside.
+Real-time grass in Vulkan: blades are Bezier curves simulated in a compute pass, then tessellated and shaded. Includes wind/gravity/recovery forces, distance-based LOD, and an controllable sphere that pushes grass aside.
 
 ## Implemented Features
-- Basic Render without physics: Baseline pipeline to render the plane and blades without applying forces, validating geometry, tessellation, and shading paths.
+- Basic Render without physics: 
+![](img/Basic.png)
+    - Baseline pipeline to render the plane and blades without applying forces, validating geometry, tessellation, and shading paths.
 	- Representing Grass as Bezier Curves: Each blade uses v0/v1/v2 + up; orientation/height/width/stiffness are packed in the .w components per the project spec.
+![](img/blade_model.png)
+
 - Simulating forces: Implemented in the compute shader to update v2 and keep blades stable.
 	- Gravity: Environmental gravity plus a front-gravity term derived from blade orientation; contributes to bending at the tip (v2).
 	- Recovery: Hooke’s law recovery pulls v2 toward its initial upright position; stiffness controls how strongly it snaps back.
 	- Wind: Time-varying, noise-modulated wind direction and gusts; aligned with blade facing to amplify believable sway.
 	- Total force: Forces integrated to update v2, projected above ground, then v1 is recomputed to preserve blade length/curvature.
 - Culling:
-	- Orientation: Removes blades nearly edge-on to the camera to avoid sub-pixel aliasing. Toggle: `ORIENTATION_CULLING` (0/1); cull if `abs(dot(viewDir, f)) < 0.9`.
-	- View-frustum: Clip-space tests for v0, v2, and an approximate midpoint with tolerance to conservatively cull off-screen blades. Toggle: `VIEW_FRUSTUM_CULLING` (0/1); cull if all of v0, v2, and m are outside x/y bounds `[-(w+TOLERANCE), +(w+TOLERANCE)]` in clip space.
-	- Distance: Bucketed distance culling reduces blade density with range using `NUM_BUCKETS` and `MAX_DISTANCE`. Toggle: `DISTANCE_CULLING` (0/1); cull when `index % NUM_BUCKETS < NUM_BUCKETS * (d_proj / MAX_DISTANCE)`, where `d_proj = length((v0 - camPos) - up * dot(v0 - camPos, up))`.
-		- ![](img/Distance_Culling.gif)
+	- Orientation: 
+![](img/Orientation_Culling.png)
+        - Removes blades nearly edge-on to the camera to avoid sub-pixel aliasing. Cull if `abs(dot(viewDir, f)) < 0.9`.
+        -  Toggle `ORIENTATION_CULLING` (1 on, 0 off) in compute.comp
+
+	- View-frustum: 
+![](img/View_Frustum_Culling.gif)
+        - Clip-space tests for v0, v2, and an approximate midpoint with tolerance to conservatively cull off-screen blades. Cull if all of v0, v2, and m are outside x/y bounds `[-(w+TOLERANCE), +(w+TOLERANCE)]` in clip space.
+        - Toggle `VIEW_FRUSTUM_CULLING` (1 on, 0 off) in compyte.comp
+	- Distance: 
+![](img/Distance_Culling.gif)
+        - Bucketed distance culling reduces blade density with range using `NUM_BUCKETS` and `MAX_DISTANCE`. Cull when `index % NUM_BUCKETS < NUM_BUCKETS * (d_proj / MAX_DISTANCE)`, where `d_proj = length((v0 - camPos) - up * dot(v0 - camPos, up))`.
+        - Toggle `DISTANCE_CULLING` (1 on, 0 off) in compute.comp
     
 - Extra credit: LOD: 
-    - Tessellation levels adapt by camera distance (near/mid/far ≈ 10/5/2) to save work while keeping nearby detail.
+![](img/LOD.gif)
+	- Tessellation levels adapt by camera distance (near/mid/far ≈ 10/5/2) to save work while keeping nearby detail.
+	- Along blade height (vertical): high subdivision uses 10/5/2 to capture curvature where it matters visually.
+	- Across blade width (horizontal): kept at 1.0 (no subdivision) since blades are thin; prioritizes performance over negligible width detail.
+
 - Extra credit: interactive sphere
+![](img/Sphere.gif)
     - A movable sphere repels nearby blades in compute; sphere position/radius are passed as a uniform.
-	- Set `ADD_INTERACTIVE_SPHERE` in `src/main.cpp` (1 on, 0 off).
+	- Set `ADD_INTERACTIVE_SPHERE` (1 on, 0 off) in main.cpp
+
