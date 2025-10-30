@@ -10,13 +10,11 @@ Vulkan Grass Rendering
 	<img src="img/grass3.gif" alt="Grass rendering demo" width="640">
 </p>
 
----
 
 ## Overview
 Real-time grass rendering in Vulkan. Each blade is modeled as a Bézier curve simulated in a compute pass, then tessellated and shaded in the graphics pipeline.  
 Features include wind, gravity, recovery forces, distance-based LOD, and a controllable sphere that interacts physically with the grass.
 
----
 
 ## Implemented Features
 
@@ -82,7 +80,7 @@ Features include wind, gravity, recovery forces, distance-based LOD, and a contr
   </p>
 
   - A movable sphere repels nearby blades in compute; sphere position/radius are passed as a uniform.  
-  - Set ADD_INTERACTIVE_SPHERE (1 on, 0 off) in main.cpp.  
+  - Set **ADD_INTERACTIVE_SPHERE** (1 on, 0 off) in main.cpp.  
 
 ---
 
