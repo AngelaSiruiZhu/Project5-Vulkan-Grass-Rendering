@@ -95,7 +95,7 @@ Features include wind, gravity, recovery forces, distance-based LOD, and a contr
 **Summary (2^8 → 2^18 blades):**
 
 - **2^8–2^12:** FPS stays very high and almost flat. The GPU spends most of its time on fixed per-frame work rather than per-blade work. Since there are relatively few blades, compute and tessellation units are not fully used, and reading or writing blade data in SSBOs adds almost no cost.  
-- **2^13–2^15:** FPS starts to drop. At this range, the GPU spends more time running blade simulation (forces, wind noise, culling) and tessellation. The workload per frame increases steadily, but memory access is still efficient, so performance falls at a moderate rate.  
+- **2^13–2^15:** FPS starts to drop. At this range, the GPU spends more time running blade simulation (forces, wind noise, culling) and tessellation. The workload per frame increases steadily, and while memory access remains efficient, performance drops at a steady but noticeable rate. 
 - **2^16–2^18:** The GPU becomes limited by compute and memory bandwidth. Reading and writing all blade data saturates the SSBO traffic, and tessellation patches fill GPU capacity. Frame time grows roughly in proportion to the number of blades — doubling blades roughly doubles render time.  
 
 ### Impact of Culling on FPS
