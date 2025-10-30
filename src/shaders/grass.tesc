@@ -41,7 +41,7 @@ void main() {
 	} else if (distance < 10.0) {
 		tessLevel = 5.0;
 	} else {
-		tessLevel = 3.0;
+		tessLevel = 2.0;
 	}
     
     gl_TessLevelInner[0] = 1.0;
